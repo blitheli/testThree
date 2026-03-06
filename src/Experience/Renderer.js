@@ -36,4 +36,9 @@ export default class Renderer
         this.instance.setSize(this.sizes.width, this.sizes.height);
         this.instance.setPixelRatio(this.sizes.pixelRatio);
     }
+
+    //  在渲染循环中调用update方法来更新渲染器的状态，例如渲染场景等
+    update() {
+        this.instance.render(this.scene, this.camera.instance);
+    }
 }

@@ -2,6 +2,7 @@ import Sizes from "./Utils/Sizes";
 import * as THREE from 'three';
 import Camera from "./Camera";
 import Renderer from "./Renderer";
+import World from "./World/World";
 
 //  体验类，负责管理整个应用的状态和行为
 //  通过单例模式确保全局只有一个Experience实例
@@ -26,6 +27,7 @@ export default class Experience
         this.sizes = new Sizes();
         this.camera = new Camera();
         this.renderer = new Renderer();
+        this.world = new World();
 
 
         this.sizes.on('resize', () => {
@@ -33,6 +35,9 @@ export default class Experience
 
             this.resize();
         });
+
+        this.tick = this.tick.bind(this);
+        this.tick();
 
     }   
 
@@ -43,7 +48,17 @@ export default class Experience
     }
 
     update() {
-        //this.time.update();
         this.camera.update();
-    }   
+        this.renderer.update();
+    }
+
+    //  每一帧更新
+    //  在渲染循环中调用tick方法来更新应用的状态和行为，例如更新相机、渲染器和场景等
+    tick(time) {
+        this.time.update(time);
+        //  在tick方法中调用update方法来更新应用的状态和行为，例如更新相机、渲染器和场景等
+        this.update();
+        //  使用requestAnimationFrame方法来创建一个渲染循环，以便在每一帧更新应用的状态和行为
+        window.requestAnimationFrame(this.tick);
+    }
 }
