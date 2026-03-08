@@ -18,6 +18,8 @@ renderer.setSize(sizes.width, sizes.height);
 renderer.setAnimationLoop(animate);
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setClearColor('#000011');
+
+console.log(renderer.capabilities.getMaxAnisotropy()); // 输出最大各向异性过滤级别
 // 场景
 const scene = new THREE.Scene();
 const axesHelper = new THREE.AxesHelper(3);
@@ -35,8 +37,10 @@ const controls = new OrbitControls(camera, canvas);
 const textureLoader = new TextureLoader();
 const earthDayTexture = textureLoader.load('/textures/earth/8k_earth_daymap.jpg');
 earthDayTexture.colorSpace = THREE.SRGBColorSpace; // 设置颜色空间为sRGB
+earthDayTexture.anisotropy = 8; // 设置各向异性过滤级别
 const earthNightTexture = textureLoader.load('/textures/earth/8k_earth_nightmap.jpg');
 earthNightTexture.colorSpace = THREE.SRGBColorSpace; // 设置颜色空间为sRGB
+earthNightTexture.anisotropy = 8; // 设置各向异性过滤级别
 const earthSpecularTexture = textureLoader.load('/textures/earth/8k_earth_specular_map.jpg');
 const earth_cloudsTexture = textureLoader.load('/textures/earth/8k_earth_clouds.jpg');
 
@@ -101,7 +105,7 @@ function animate(time) {
 
     controls.update();
     renderer.render(scene, camera);
-    mesh.rotation.y = time * 0.0001;
+    mesh.rotation.y = time * 0.00003;
 }
 
 window.addEventListener('resize', () => {
