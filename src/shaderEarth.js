@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import earthVertexShader from './shaders/earth/vertex.glsl?raw';
 import earthFragmentShader from './shaders/earth/fragment.glsl?raw';
+import atmosphereVertexShader from './shaders/atmosphere/vertex.glsl?raw'; 
+import atmosphereFragmentShader from './shaders/atmosphere/fragment.glsl?raw';      
 import { TextureLoader } from 'three';
 import GUI from 'lil-gui';
 
@@ -44,12 +46,29 @@ earthNightTexture.anisotropy = 8; // 设置各向异性过滤级别
 const earthSpecularTexture = textureLoader.load('/textures/earth/8k_earth_specular_map.jpg');
 const earth_cloudsTexture = textureLoader.load('/textures/earth/8k_earth_clouds.jpg');
 
-//  自定义着色器,球体
-const geometry = new THREE.SphereGeometry(2, 64, 64);
-const material = new THREE.ShaderMaterial({
+//  地球大气参数
+const earthParameters = {}
+earthParameters.atmosphereDayColor = '#00aaff';
+earthParameters.atmosphereTwilightColor = '#ff6600';
+
+gui.addColor(earthParameters, 'atmosphereDayColor').name('Atmosphere Day Color')
+    .onChange((value) => {
+    earthMaterial.uniforms.uAtmosphereDayColor.value.set(value);
+    atmosphereMaterial.uniforms.uAtmosphereDayColor.value.set(value);
+});
+gui.addColor(earthParameters, 'atmosphereTwilightColor').name('Atmosphere Twilight Color')
+    .onChange((value) => {
+    earthMaterial.uniforms.uAtmosphereTwilightColor.value.set(value);
+    atmosphereMaterial.uniforms.uAtmosphereTwilightColor.value.set(value);
+});
+
+//  自定义着色器,地球
+const earthGeometry = new THREE.SphereGeometry(2, 64, 64);
+const earthMaterial = new THREE.ShaderMaterial({
     vertexShader: earthVertexShader,
     fragmentShader: earthFragmentShader, 
     //transparent: true,    
+    //  uniforms是传递给着色器的变量，可以在着色器中使用这些变量来控制渲染效果
     uniforms: {
         uFrequency: { value: new THREE.Vector2(10.0, 5.0) }, // 波浪频率
         uTime: { value: 0.0 }, // 时间变量
@@ -58,17 +77,35 @@ const material = new THREE.ShaderMaterial({
         uSpecularTexture: {value: earthSpecularTexture}, // 纹理变量
         uCloudsTexture: {value: earth_cloudsTexture}, // 纹理变量
         uSunDirection: {value: new THREE.Vector3(0.0, 1.0, 0.0)}, // 太阳方向
-    },
-    side: THREE.DoubleSide,}
+        uAtmosphereDayColor: {value: new THREE.Color(earthParameters.atmosphereDayColor)}, // 大气颜色
+        uAtmosphereTwilightColor: {value: new THREE.Color(earthParameters.atmosphereTwilightColor)}, // 大气颜色
+    }}
     );
-const mesh = new THREE.Mesh(geometry, material);
+const mesh = new THREE.Mesh(earthGeometry, earthMaterial);
 scene.add(mesh);
+
+//  球体，模拟地球大气层
+const atmosphereMaterial = new THREE.ShaderMaterial({
+    vertexShader: atmosphereVertexShader,
+    fragmentShader: atmosphereFragmentShader,
+    side: THREE.BackSide, // 只渲染背面
+    transparent: true, // 启用透明度,
+    //  uniforms是传递给着色器的变量，可以在着色器中使用这些变量来控制渲染效果
+    uniforms: {
+        uSunDirection: {value: new THREE.Vector3(0.0, 1.0, 0.0)}, // 太阳方向
+        uAtmosphereDayColor: {value: new THREE.Color(earthParameters.atmosphereDayColor)}, // 大气颜色
+        uAtmosphereTwilightColor: {value: new THREE.Color(earthParameters.atmosphereTwilightColor)}, // 大气颜色
+    }}
+);
+const atmosphere = new THREE.Mesh(earthGeometry, atmosphereMaterial);
+atmosphere.scale.set(1.02, 1.02, 1.02); // 稍微放大一点，包裹住地球
+scene.add(atmosphere);
 
 //  太阳
 const sunSpherical = new THREE.Spherical(1, Math.PI*0.5, 0.0); // 半径、极角、方位角
 const sunDirection = new THREE.Vector3();
 
-//
+//  调试用的太阳位置可视化
 const debugSun = new THREE.Mesh(
     new THREE.IcosahedronGeometry(0.1, 2),
     new THREE.MeshBasicMaterial({ color: 'yellow' })
@@ -81,15 +118,16 @@ const updateSun = () => {
     debugSun.position.copy(sunDirection).multiplyScalar(5); // 将太阳位置放大到场景中
 
     //  更新着色器中的太阳方向
-    material.uniforms.uSunDirection.value.copy(sunDirection);
+    earthMaterial.uniforms.uSunDirection.value.copy(sunDirection);
+    atmosphereMaterial.uniforms.uSunDirection.value.copy(sunDirection);
 }
 updateSun();
 
 gui.add(sunSpherical, 'phi').min(0).max(Math.PI).step(0.01).name('Sun Phi').onChange(updateSun);
 gui.add(sunSpherical, 'theta').min(0).max(2 * Math.PI).step(0.01).name('Sun Theta').onChange(updateSun);
 
-gui.add(material.uniforms.uFrequency.value, 'x').min(0).max(20).step(0.1).name('X Frequency');
-gui.add(material.uniforms.uFrequency.value, 'y').min(0).max(20).step(0.1).name('Y Frequency');
+gui.add(earthMaterial.uniforms.uFrequency.value, 'x').min(0).max(20).step(0.1).name('X Frequency');
+gui.add(earthMaterial.uniforms.uFrequency.value, 'y').min(0).max(20).step(0.1).name('Y Frequency');
 
 
 
@@ -101,7 +139,7 @@ function animate(time) {
     //console.log(elapsedTime);
 
     //  更新时间变量
-    material.uniforms.uTime.value = elapsedTime;
+    earthMaterial.uniforms.uTime.value = elapsedTime;
 
     controls.update();
     renderer.render(scene, camera);

@@ -6,6 +6,8 @@ uniform sampler2D uNightTexture; // 纹理变量
 uniform sampler2D uSpecularTexture; // 纹理变量
 uniform sampler2D uCloudsTexture; // 纹理变量
 uniform vec3 uSunDirection; // 太阳方向
+uniform vec3 uAtmosphereDayColor; // 白天颜色
+uniform vec3 uAtmosphereTwilightColor; // 晨昏线颜色
 
 void main() {
 
@@ -39,19 +41,29 @@ void main() {
     cloudMix = smoothstep(0.25, 1.0, cloudMix); // 调整云层密度的阈值, 使云层效果更明显
     // 根据云层密度混合云层颜色
     color = mix(color, vec3(1.0), cloudMix* dayMix); // 只有在白天云层才明显，夜晚云层不明显
-    // 夜晚dayColor较暗，云层不显示
-    // 白天dayColor较亮，云层显示
-    // 云层密度越高，云层颜色越接近白色
-    //color = mix(color, vec3(1.0), cloudMix * dayMix); // 只有在白天云层才明显，夜晚云层不明显
 
-    //  
-    vec3 specularColor = texture2D(uSpecularTexture, vUv).rgb;    
-    
+    //  菲涅尔反射
+    float fresnel = dot(viewDirection, normal) + 1.0;
+    fresnel = pow(fresnel, 2.0); // 调整菲涅尔反射的强度
+    //color = vec3(fresnel);
 
-    
+    // 大气颜色
+    float atmosphereMix = smoothstep(-0.5, 1.0, sunOrientation); // 根据太阳光线的方向计算大气颜色混合因子
+    // 根据太阳光线的方向混合大气颜色
+    vec3 atmosphereColor = mix(uAtmosphereTwilightColor, uAtmosphereDayColor, atmosphereMix); 
+    color = mix(color, atmosphereColor, fresnel*atmosphereMix); // 根据菲涅尔反射和太阳光线的方向混合大气颜色
 
-        //color = textureColor.rgb * sunOrientation; // 将纹理颜色赋值给最终颜色
-    // 最终的颜色计算
+    //  镜面反射
+    //  从镜面反射纹理中获取镜面反射强度
+    float specularWight = texture2D(uSpecularTexture, vUv).r;
+    vec3 reflectedLight = reflect(-uSunDirection, normal); // 计算反射光线
+    //float specular = pow(max(dot(reflectedLight, viewDirection), 0.0), 16.0); // 计算镜面反射强度
+    float specular = -dot(reflectedLight, viewDirection);
+    specular = pow(max(specular, 0.0), 32.0); // 计算镜面反射强度
+
+    vec3 specularColor = mix(vec3(1.0), atmosphereColor, fresnel); // 根据菲涅尔反射混合镜面反射颜色
+    color += specularColor * specular * specularWight; // 根据镜面反射强度和纹理权重添加镜面反射颜色
+
     gl_FragColor = vec4(color, 1.0);
     
 
