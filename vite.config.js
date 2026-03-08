@@ -4,6 +4,7 @@ export default defineConfig({
     root: 'src/',
     base: './',
     publicDir: '../static/',
+    assetsInclude: ['**/*.glsl'],
     server: {
         host: true,
         port: 3000,

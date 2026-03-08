@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import Camera from "./Camera";
 import Renderer from "./Renderer";
 import World from "./World/World";
+import Resources from "./Utils/Resources";
 
 //  体验类，负责管理整个应用的状态和行为
 //  通过单例模式确保全局只有一个Experience实例
@@ -20,7 +21,7 @@ export default class Experience
         this.canvas = canvas;
 
         this.scene = new THREE.Scene();        
-        
+        this.resources = new Resources();
         this.time = new THREE.Timer();
 
         //  创建Sizes实例
