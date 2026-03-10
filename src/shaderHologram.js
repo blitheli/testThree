@@ -33,18 +33,29 @@ const controls = new OrbitControls(camera, canvas);
 
 //  自定义着色器
 //=============================================================================
+
+const materialParameters = {};
+materialParameters.color = '#70c1ff';
+gui.addColor(materialParameters, 'color').name('Holo Color')
+    .onChange((value) => {
+    material.uniforms.uColor.value.set(value);
+});
 const material = new THREE.ShaderMaterial({
     vertexShader: holoVertexShader,
     fragmentShader: holoFragmentShader,
-    transparent: true,            
+    transparent: true,           
+    side: THREE.DoubleSide,       // 双面渲染 
+    depthWrite: false,           // 禁止写入深度缓冲区
+    blending: THREE.AdditiveBlending, // 使用加法混合模式
     uniforms: {
-        uTime: { value: 0.0 }   // 定义一个时间变量
+        uTime: { value: 0.0 },   // 定义一个时间变量
+        uColor: { value: new THREE.Color(materialParameters.color) } // 定义一个颜色变量
     }
 }
 );
 
 const sphere = new THREE.Mesh(
-    new THREE.SphereGeometry(),
+    new THREE.SphereGeometry(1.0, 128, 128),
     material
 );
 sphere.position.x = -1.5;
