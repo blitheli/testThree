@@ -1,22 +1,12 @@
 precision mediump float;
-
+varying vec3 vColor; // 从顶点着色器传递过来的颜色
 
 void main() {
 
-    // float strength = vUv.y;
+    float strength = distance(gl_PointCoord, vec2(0.5)) * 2.0; // 计算点坐标与中心的距离
+    strength = 1.0 - strength; 
 
-    // float strength = mod(vUv.y*10.0, 1.0);
+    vec3 color = mix(vec3(0.0), vColor, strength); // 根据距离混合颜色，使点在中心更亮，在边缘更暗
 
-    // float strength = step(0.2, mod(vUv.y*10.0, 1.0)); // 产生阶梯状的条纹效果
-    // strength += step(0.2, mod(vUv.x*10.0, 1.0)); // 叠加更多的阶梯条纹
-    // strength = 1.0-strength; // 反转颜色，使条纹为黑色，背景为白色
-
-    //float strength = min(abs(vUv.x - 0.5), abs(vUv.y - 0.5)) ;
-
-    //float strength = floor(vUv.y * 10.0) / 10.0; // 将纹理坐标y分成10段，产生阶梯状的条纹效果
-    
-    //float strength = 0.02 / distance(vUv, vec2(0.5, 0.5)); // 计算纹理坐标与中心点的距离，产生径向渐变效果
-    
-    //loat strength = sin(cnoise(vUv * 10.0) * 20.0); // 产生随机噪声效果
-    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+    gl_FragColor = vec4(color, 1.0);
 }

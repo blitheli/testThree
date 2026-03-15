@@ -43,10 +43,10 @@ const controls = new OrbitControls(camera, canvas);
 //=============================================================================
 
 const parameters = {};
-parameters.count = 15000;
+parameters.count = 200000;
 parameters.size = 0.06;
 parameters.radius = 5;
-parameters.spin = 1;
+parameters.spin = 0.0;
 parameters.branches = 3;
 parameters.randomness = 0.5;
 parameters.randomnessPower = 3;
@@ -70,6 +70,7 @@ const generateGalaxy = () => {
     const positions = new Float32Array(parameters.count * 3);
     const colors = new Float32Array(parameters.count * 3);
     const scales = new Float32Array(parameters.count); 
+    const randomness = new Float32Array(parameters.count * 3);
 
     const insideColor = new THREE.Color(parameters.insideColor);
     const outsideColor = new THREE.Color(parameters.outsideColor);
@@ -80,13 +81,18 @@ const generateGalaxy = () => {
         const radius = Math.random() * parameters.radius;
         const spinAngle = radius * parameters.spin;
         const branchAngle = (i % parameters.branches) / parameters.branches * Math.PI * 2;
+      
+        positions[i3] = Math.cos(branchAngle + spinAngle) * radius;     // x
+        positions[i3 + 1] = 0;  // y
+        positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * radius;     // z
 
+        //  记录随机偏移
         const randomX = (Math.pow(Math.random(), parameters.randomnessPower) * (Math.random() < 0.5 ? 1 : -1)) * parameters.randomness;
         const randomY = (Math.pow(Math.random(), parameters.randomnessPower) * (Math.random() < 0.5 ? 1 : -1)) * parameters.randomness;
         const randomZ = (Math.pow(Math.random(), parameters.randomnessPower) * (Math.random() < 0.5 ? 1 : -1)) * parameters.randomness;
-        positions[i3] = Math.cos(branchAngle + spinAngle) * radius + randomX;     // x
-        positions[i3 + 1] = randomY;  // y
-        positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * radius + randomZ;     // z
+        randomness[i3] = randomX;
+        randomness[i3 + 1] = randomY;
+        randomness[i3 + 2] = randomZ;
 
         //  颜色渐变
         const mixedColor = insideColor.clone();
@@ -102,6 +108,7 @@ const generateGalaxy = () => {
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     geometry.setAttribute('aScale', new THREE.BufferAttribute(scales, 1));
+    geometry.setAttribute('aRandomness', new THREE.BufferAttribute(randomness, 3));
 
     material = new THREE.ShaderMaterial({
         depthWrite: false,
@@ -111,7 +118,7 @@ const generateGalaxy = () => {
         fragmentShader: galaxyFragmentShader,
         uniforms: {
             uTime: { value: 0 },
-            uSize: {value: 8.0 * window.devicePixelRatio}
+            uSize: {value: 10.0 * window.devicePixelRatio}
         }
     });
 
@@ -122,7 +129,7 @@ const generateGalaxy = () => {
 
 generateGalaxy();
 
-gui.add(parameters, 'count').min(1000).max(100000).step(1000).onFinishChange(generateGalaxy);
+gui.add(parameters, 'count').min(1000).max(300000).step(1000).onFinishChange(generateGalaxy);
 gui.add(parameters, 'size').min(0.001).max(0.1).step(0.001).onFinishChange(generateGalaxy);
 gui.add(parameters, 'radius').min(0.01).max(20).step(0.01).onFinishChange(generateGalaxy);
 gui.add(parameters, 'spin').min(-5).max(5).step(0.01).onFinishChange(generateGalaxy);
@@ -138,6 +145,9 @@ const timer = new THREE.Timer();
 function animate(time) {
     timer.update(time);
     const elapsedTime = timer.getElapsed();
+
+    material.uniforms.uTime.value = elapsedTime;
+
     //console.log(elapsedTime);
     controls.update();
     renderer.render(scene, camera);
